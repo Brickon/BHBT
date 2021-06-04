@@ -30,7 +30,7 @@ var io = getModule('socket.io')(server);
 
 //--CONFIG--//
 
-let noIp = true; /*purpose of this is if you dont want use ip adresses of the players for extra security of the system 
+let noIp = false; /*purpose of this is if you dont want use ip adresses of the players for extra security of the system 
 if you disable this well people can change user and control anyone
 this system needs ips to prevent people control other people s accounts*/
 let limitUser = 555; //limit of the Bricktale users can be on your server same time
@@ -41,17 +41,19 @@ let limitUser = 555; //limit of the Bricktale users can be on your server same t
 // Z is the up vector
 class plr{
 
+    
     constructor(user,ip){
+        const dth =  new Bot(user);
         this.user = user; //a identificator
         this.ipv4 = ip; //to be sure if that person using the account
-        this.plr = new Bot(user); //not really a bot just, npc entity for adding players xd
-        Game.newBot(this.plr);
+         //not really a bot just, npc entity for adding players xd this.dth =  ;
+        Game.newBot(dth);//plr
         
     }
-    
+
 
 }
-//no ip version
+
 class plrIP{
 
     constructor(user){
@@ -60,7 +62,8 @@ class plrIP{
 
     }
 }
-let players = [new plr("Admim")];
+var players = [new plr("Admim")];
+var keys = []; //im js noob refactor it ples :(
 
 Game.on("playerJoin", (player) => {
     player.on("initialSpawn", () => {
@@ -81,20 +84,49 @@ io.on('connection', function(socket) {
             let ip = address.address
             //add player info to the players array
             //to find npcs
-            player.push(new plr(user,ip));
+            players.push(new plr(user,ip));
+            const dth =  new Bot(user);
+
+            Game.newBot(dth);//plr
+
+            //keys.push(user);
         }else{
+            const dth =  new Bot(user);
+
+            Game.newBot(dth);
             //insecure method
             //recomended is using ips
             //use this if u addicted to privacy something like that
-            player.push(new plrIP(user));
-        }.
+            players.push(new plrIP(user));
+        }
     });
+           Game.on("playerJoin", (player) => {
+        player.on("initialSpawn", () => {
+            const bot = world.bots.find(bot => bot.name === "Bobux!")
+            player.position = bot.position;
+     })
+    })
+
     socket.on('pos', function(data) {
-        let pos = players.indexOf(data.user)
-        let X = data.x;
-        let Y = data.y;
-        let Z = data.z;
-        players[pos].plr.Position = new Vector3(X,Y,Z);
+       // let pos = keys.indexOf(data.user);
+        let X = data.X;
+        let Y = data.Y;
+        let Z = data.Z;
+        
+      /*  console.log(pos+"X: "+X)
+       if(players[pos]>-1)*/
+       const bot = world.bots.find(bot => bot.name === data.user)
+       
+       if(bot != undefined){
+       bot.setPosition(new Vector3(-X,-Y,-Z));
+       bot.rotation = new Vector3(0,X,0);
+       bot.position = new Vector3(X,Y,Z);
+
+
+       bot.setSpeech("Testing the service")
+      // console.log(bot);
+       }
+    //  players[pos].setPos(new Vector3(X,Y,Z));//.dth.Position = new Vector3(X,Y,Z);
        // console.log( );
 
     });
@@ -105,4 +137,9 @@ io.on('connection', function(socket) {
 
     });    
 });
+//Client Testing
+app.get('/', function (req, res) {
+    res.sendFile(__dirname+"/index.html")
+})
+
 server.listen(80);
