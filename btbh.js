@@ -30,7 +30,7 @@ var io = getModule('socket.io')(server);
 
 //--CONFIG--//
 
-let noIp = false; /*purpose of this is if you dont want use ip adresses of the players for extra security of the system 
+let noIp = true; /*purpose of this is if you dont want use ip adresses of the players for extra security of the system 
 if you disable this well people can change user and control anyone
 this system needs ips to prevent people control other people s accounts*/
 let limitUser = 555; //limit of the Bricktale users can be on your server same time
@@ -51,7 +51,7 @@ class plr{
     
 
 }
-
+//no ip version
 class plrIP{
 
     constructor(user){
