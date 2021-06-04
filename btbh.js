@@ -53,7 +53,7 @@ class plr{
 
 
 }
-
+// no ip version if u value privacy but not the security bruh
 class plrIP{
 
     constructor(user){
