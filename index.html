@@ -3,7 +3,7 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
-        <title>Unfinished Client</title>
+        <title>Babylon.js sample code</title>
 
         <!-- Babylon.js -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
@@ -105,9 +105,33 @@
         });
 		
 
+function hexToRgb(hex) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
+
+
     var socket = io.connect('/');
 
     socket.emit('addplr', { user: 'Bobux!' });
+	socket.emit('getMAP', { user: 'Bobux!' });
+	socket.on('mapBobux!', function(data) {
+	console.log(JSON.parse(data.map)[0].color);
+        let map = JSON.parse(data.map); //[0].color JSON.parse(data.map)[0].position JSON.parse(data.map)[0].scale
+		for (let i = 0; i < map.length; i++) {
+			let Mat = new BABYLON.StandardMaterial("redMat", scene);
+			Mat.ambientColor = new BABYLON.Color3(hexToRgb(map[i].color).r/255,hexToRgb(map[i].color).g/255,hexToRgb(map[i].color).b/255);
+			let box = new BABYLON.Mesh.CreateBox("box",2,scene);
+			box.position = new BABYLON.Vector3(map[i].position.x,map[i].position.z,map[i].position.y);
+			box.scaling = new BABYLON.Vector3(map[i].scale.x,map[i].scale.z,map[i].scale.y);
+			box.material = Mat;
+		}
+    });
+	
 	setInterval(function(){
       
 	socket.emit('pos', { user: 'Bobux!' , X: camera.position.x, Y: camera.position.y, Z: camera.position.z});},15);
