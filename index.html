@@ -41,41 +41,118 @@
 		<script src="/socket.io/socket.io.js"></script>
     <script>
         var canvas = document.getElementById("renderCanvas");
+		
+		var isKeyPressed = {};
+
+BABYLON.Camera.prototype.moveTo = function (targetPos, speed) {
+    var ease = new BABYLON.CubicEase();
+    ease.setEasingMode(BABYLON.EasingFunction.EASINGMODE_EASEINOUT);
+	BABYLON.Animation.CreateAndStartAnimation('at1', this, 'position', speed, 120, this.position, targetPos, 0, ease);
+}
+
+
+
 		var camera ;
         var engine = null;
         var scene = null;
         var sceneToRender = null;
+		var shadowGenerator;
         var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
         var createScene = function () {
     // This creates a basic Babylon Scene object (non-mesh)
     var scene = new BABYLON.Scene(engine);
 
+
+    // This creates a basic Babylon Scene object (non-mesh)
+    var scene = new BABYLON.Scene(engine);
+	
+	    scene.actionManager = new BABYLON.ActionManager(scene);
+    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function (evt) {
+        isKeyPressed[evt.sourceEvent.keyCode] = evt.sourceEvent.type == "keydown";
+    }));
+    scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, function (evt) {
+        isKeyPressed[evt.sourceEvent.keyCode] = evt.sourceEvent.type == "keydown";
+    }));
+
+
+
+
+
     // This creates and positions a free camera (non-mesh)
-   camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
-
+    camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 1000, -10), scene);
+	//camera.minZ = .05;
     // This targets the camera to scene origin
-    camera.setTarget(BABYLON.Vector3.Zero());
-
+    camera.setTarget( BABYLON.Vector3.Zero());// new BABYLON.Vector3(0, 100, 0); 
+	camera._needMoveForGravity = true;
     // This attaches the camera to the canvas
     camera.attachControl(canvas, true);
 
     // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-    var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+    var light = new BABYLON.DirectionalLight("*dir00", new BABYLON.Vector3(0, -1, -1), scene);
+    light.position = new BABYLON.Vector3(0,10,0);
 
     // Default intensity is 1. Let's dim the light a small amount
-    light.intensity = 0.7;
+    light.intensity = 1;
+    shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
 
-    // Our built-in 'sphere' shape.
-    var sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 2, segments: 32}, scene);
+
+	
+    // Our built-in 'ground' shape. Params: name, width, depth, subdivs, scene
+    var ground = BABYLON.Mesh.CreateGround("ground1", 100, 100, 2, scene);
+    ground.receiveShadows = true;
+shadowGenerator.usePoissonSampling = true;
+shadowGenerator.useBlurCloseExponentialShadowMap = true;
+        light.shadowMinZ = 0.5;
+        light.shadowMaxZ = 50;
+    shadowGenerator.useKernelBlur = true;
+    shadowGenerator.blurKernel = 16;
+	scene.ambientColor = new BABYLON.Color3(0.252, 0.186, 0.003);
+	
+	    var defaultPipeline = new BABYLON.DefaultRenderingPipeline("default", true, scene, [camera]);
+    defaultPipeline.bloomEnabled = true;
+    defaultPipeline.fxaaEnabled = true;
+    defaultPipeline.bloomWeight = 0.5;
+	defaultPipeline.imageProcessing.toneMappingEnabled = true;
+    defaultPipeline.cameraFov = camera.fov;
+
+    scene.gravity = new BABYLON.Vector3(0, -0.9, 0);
+    ground.checkCollisions = true;
+    // Enable Collisions
+    scene.collisionsEnabled = true;
+	    camera.checkCollisions = true;
+		 camera.ellipsoid = new BABYLON.Vector3(1, 5, 1);
+   camera.applyGravity = true;
+
+	/*shadowGenerator.useBlurExponentialShadowMap = true;
+    shadowGenerator.useKernelBlur = true;
+    shadowGenerator.blurKernel = 16;*/
+    // Our built-in 'sphere' shape. Params: name, subdivs, size, scene
+    //var sphere = BABYLON.Mesh.CreateSphere("sphere1", 16, 2, scene);
+   // shadowGenerator.getShadowMap().renderList.push(sphere);
+
 
     // Move the sphere upward 1/2 its height
-    sphere.position.y = 1;
+    //sphere.position.y = 1;
 
-    // Our built-in 'ground' shape.
-    var ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 6, height: 6}, scene);
-
+    
+	
+	    scene.onPreKeyboardObservable.add(function (info) {
+        if(info.event.key == "Spacebar"){
+             info.event.key = " ";
+        }
+        // console.log(info)
+        if (info.event.key == " " && info.type == 1) {
+            console.log("spacebar");
+            // jump.  scene.gravity.y brings us down.
+            camera.moveTo(camera.position.add(new BABYLON.Vector3(0, 5, 0)), 250);
+        }
+    });
+	
+	
     return scene;
 };
+
+
                 window.initFunction = async function() {               
                     var asyncEngineCreation = async function() {
                         try {
@@ -120,16 +197,34 @@ function hexToRgb(hex) {
     socket.emit('addplr', { user: 'Bobux!' });
 	socket.emit('getMAP', { user: 'Bobux!' });
 	socket.on('mapBobux!', function(data) {
+	setTimeout(function(){
 	console.log(JSON.parse(data.map)[0].color);
         let map = JSON.parse(data.map); //[0].color JSON.parse(data.map)[0].position JSON.parse(data.map)[0].scale
 		for (let i = 0; i < map.length; i++) {
 			let Mat = new BABYLON.StandardMaterial("redMat", scene);
-			Mat.ambientColor = new BABYLON.Color3(hexToRgb(map[i].color).r/255,hexToRgb(map[i].color).g/255,hexToRgb(map[i].color).b/255);
-			let box = new BABYLON.Mesh.CreateBox("box",2,scene);
-			box.position = new BABYLON.Vector3(map[i].position.x,map[i].position.z,map[i].position.y);
-			box.scaling = new BABYLON.Vector3(map[i].scale.x,map[i].scale.z,map[i].scale.y);
+			Mat.diffuseColor /*ambientColor*/ = new BABYLON.Color3(hexToRgb(map[i].color).r/255,hexToRgb(map[i].color).g/255,hexToRgb(map[i].color).b/255);
+			let box = new BABYLON.Mesh.CreateBox("box",1,scene);
+			if(map[i].light>10)
+			var light = new BABYLON.PointLight("pointLight", new BABYLON.Vector3(1, 10, 1), scene);
+
+
+
+			Mat.specularColor = new BABYLON.Color3(0, 0, 0);
+			
+			Mat.ambientColor = new BABYLON.Color3(252, 186, 3);
+			Mat.ambientColor = new BABYLON.Color3(0.252, 0.186, 0.003);
+
+			shadowGenerator.getShadowMap().renderList.push(box);
+			shadowGenerator.addShadowCaster(box);
+			box.receiveShadows = true;
+			box.position = new BABYLON.Vector3(-map[i].position.x+-map[i].scale.x/ 2,map[i].position.z+map[i].scale.z/ 2,map[i].position.y+map[i].scale.y/ 2);
+			box.scaling = new BABYLON.Vector3(-map[i].scale.x,map[i].scale.z,map[i].scale.y);
 			box.material = Mat;
+			box.visibility = map[i].visibility;
+			if(map[i].collision == true)
+			box.checkCollisions = true;
 		}
+		}, 1500);
     });
 	
 	setInterval(function(){

@@ -53,7 +53,7 @@ class plr{
 
 
 }
-// no ip version if u value privacy but not the security bruh
+
 class plrIP{
 
     constructor(user){
@@ -118,9 +118,9 @@ io.on('connection', function(socket) {
        const bot = world.bots.find(bot => bot.name === data.user)
        
        if(bot != undefined){
-       bot.setPosition(new Vector3(-X,-Y,-Z));
-       bot.rotation = new Vector3(0,X,0);
-       bot.position = new Vector3(X,Y,Z);
+       bot.setPosition(new Vector3(-X-15,15+Z,Y));
+
+       bot.position = new Vector3(-X,15+Z,Y);
 
 
        bot.setSpeech("Testing the service")
